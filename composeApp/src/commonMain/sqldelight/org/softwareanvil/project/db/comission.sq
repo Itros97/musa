@@ -1,0 +1,80 @@
+CREATE TABLE Commission (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clientName TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'INQUIRY',
+    priceGross REAL NOT NULL,
+    paypalTax REAL NOT NULL DEFAULT 0.0,
+    tip REAL,
+    netPrice REAL NOT NULL DEFAULT 0.0,
+    createdAt INTEGER NOT NULL,
+    deadline INTEGER,
+    completedAt INTEGER,
+    tags TEXT,
+    notes TEXT
+);
+
+CREATE INDEX idx_commission_status ON Commission(status);
+CREATE INDEX idx_commission_deadline ON Commission(deadline);
+CREATE INDEX idx_commission_client ON Commission(clientName);
+
+selectAll:
+SELECT * FROM Commission ORDER BY createdAt DESC;
+
+selectById:
+SELECT * FROM Commission WHERE id = ?;
+
+selectByStatus:
+SELECT * FROM Commission WHERE status = ? ORDER BY createdAt DESC;
+
+selectUpcomingDeadlines:
+SELECT * FROM Commission
+WHERE status IN ('ACCEPTED', 'IN_PROGRESS', 'PAUSED', 'REVIEW')
+AND deadline IS NOT NULL
+ORDER BY deadline ASC;
+
+searchByText:
+SELECT * FROM Commission
+WHERE clientName LIKE '%' || ? || '%'
+OR title LIKE '%' || ? || '%'
+ORDER BY createdAt DESC;
+
+selectForDateRange:
+SELECT * FROM Commission
+WHERE createdAt >= ? AND createdAt <= ?
+ORDER BY createdAt DESC;
+
+countByStatus:
+SELECT status, COUNT(*) AS total FROM Commission GROUP BY status;
+
+totalForDateRange:
+SELECT COALESCE(SUM(netPrice), 0.0) AS totalNet,
+       COALESCE(SUM(priceGross + COALESCE(tip, 0.0)), 0.0) AS totalGross,
+       COALESCE(SUM((priceGross + COALESCE(tip, 0.0)) * paypalTax), 0.0) AS totalFees
+FROM Commission
+WHERE status = 'COMPLETED'
+AND completedAt >= ? AND completedAt <= ?;
+
+insert:
+INSERT INTO Commission (clientName, title, description, status, priceGross, paypalTax, tip, netPrice, createdAt, deadline, completedAt, tags, notes)
+VALUES (?, ?, ?, ?, ?, ?, ?, (? + COALESCE(?, 0.0)) * (1.0 - ?), ?, ?, ?, ?, ?);
+
+update:
+UPDATE Commission
+SET clientName = ?, title = ?, description = ?, status = ?, priceGross = ?, paypalTax = ?, tip = ?,
+    netPrice = (? + COALESCE(?, 0.0)) * (1.0 - ?),
+    deadline = ?, completedAt = ?, tags = ?, notes = ?
+WHERE id = ?;
+
+updateStatus:
+UPDATE Commission SET status = ? WHERE id = ?;
+
+markCompleted:
+UPDATE Commission SET status = 'COMPLETED', completedAt = ? WHERE id = ?;
+
+delete:
+DELETE FROM Commission WHERE id = ?;
+
+deleteAll:
+DELETE FROM Commission;
