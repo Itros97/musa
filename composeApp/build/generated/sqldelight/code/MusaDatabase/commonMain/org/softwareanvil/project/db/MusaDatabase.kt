@@ -5,10 +5,12 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import kotlin.Unit
-import org.softwareanvil.project.db.MUSA.composeApp.commonMain.newInstance
-import org.softwareanvil.project.db.MUSA.composeApp.commonMain.schema
+import org.softwareanvil.project.db.composeApp.newInstance
+import org.softwareanvil.project.db.composeApp.schema
 
 public interface MusaDatabase : Transacter {
+  public val comissionQueries: ComissionQueries
+
   public companion object {
     public val Schema: SqlSchema<QueryResult.Value<Unit>>
       get() = MusaDatabase::class.schema
